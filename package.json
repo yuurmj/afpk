@@ -1,0 +1,31 @@
+{
+  "name": "afpk",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "start": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  }, 
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yuurmj/afpk.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/yuurmj/afpk/issues"
+  },
+  "homepage": "https://github.com/yuurmj/afpk#readme",
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.2.1",
+    "sass": "^1.107.1",
+    "vite": "^8.3.5"
+  }
+}
