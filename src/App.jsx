@@ -18,13 +18,14 @@ export default function App() {
             />
 
             <main className="app__content">
-                {currentPage === 'plan' && 
+                {currentPage === 'plan' && (
                     <PlanPage 
                         customer={customer} 
-                        onCustomerChange={setCustomer}
-                    />
-                }
-                {currentPage === 'scenario' && <ScenarioPage />}
+                        onCustomerChange={setCustomer} />
+                )}
+                {currentPage === 'scenario' && (
+                    <ScenarioPage customer={customer} />
+                )}
                 {currentPage === 'review' && <ReviewPage />}
             </main>
         </div>
