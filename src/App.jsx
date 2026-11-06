@@ -1,10 +1,32 @@
+import { useState } from 'react';
+import Sidebar from './components/Sidebar.jsx';
+import PlanPage from './pages/PlanPage.jsx';
+import ScenarioPage from './pages/ScenarioPage.jsx';
+import ReviewPage from './pages/ReviewPage.jsx';
+import {customer as initialCustomer} from './data/customer.js';
 import './App.scss';
 
 export default function App() {
+    const [currentPage, setCurrentPage] = useState('plan');
+    const [customer, setCustomer] = useState(initialCustomer);
+
     return (
-        <main>
-            <h1>AFPK</h1>
-            <p>재무계획 시뮬레이션 · AI 답변 검토</p>
-        </main>
-    )
+        <div className="app">
+            <Sidebar
+                currentPage={currentPage}
+                onPageChange={setCurrentPage}
+            />
+
+            <main className="app__content">
+                {currentPage === 'plan' && 
+                    <PlanPage 
+                        customer={customer} 
+                        onCustomerChange={setCustomer}
+                    />
+                }
+                {currentPage === 'scenario' && <ScenarioPage />}
+                {currentPage === 'review' && <ReviewPage />}
+            </main>
+        </div>
+    );
 }
