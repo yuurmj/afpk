@@ -15,7 +15,7 @@
         }
     }
 
-    &__settings, &__goal {
+    &__settings, &__goal, &__adjustment, &__explanation, &__stress {
         padding-block: 28px;
         border-top: 1px solid vars.$border-color;
 
@@ -51,7 +51,7 @@
         }
     }
 
-    &__results, &__goal {
+    &__results, &__goal, &__adjustment, &__stress {
         padding-block: 28px;
         border-top: 1px solid vars.$border-color;
 
@@ -112,5 +112,73 @@
         display: flex;
         flex-wrap: wrap;
         gap: 24px;
+    }
+
+    &__adjustment-help {
+        margin-bottom: 20px;
+    }
+
+    &__comparison-title {
+        margin: 32px 0 0;
+        font-size: 16px;
+        font-weight: 600;
+        line-height: 1.4;
+    }   
+
+    &__explanation-help {
+        margin-bottom: 16px;
+    }
+
+    &__explain-button {
+        padding: 10px 16px;
+        border: 0;
+        border-radius: 4px;
+        background-color: vars.$primary;
+        color: vars.$bg-surface;
+        font-size: 14px;
+        font-weight: 500;
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        &:focus-visible {
+            outline: 2px solid vars.$primary;
+            outline-offset: 3px;
+        }
+    }
+
+    &__explanation-error {
+        color: #b42318;
+    }
+
+    &__explanation-result {
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid vars.$border-color;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        line-height: 1.8;
+    }
+
+    &__stress {
+        > p {
+            margin-top: 12px;
+            color: vars.$text-secondary;
+            font-size: 13px;
+        }
+
+        table {
+            min-width: 680px;
+        }
+
+        tbody th {
+            white-space: nowrap;
+        }
+    }
+
+    &__table-scroll {
+        overflow-x: auto;
     }
 }
