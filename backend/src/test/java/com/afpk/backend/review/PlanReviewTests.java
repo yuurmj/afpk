@@ -115,4 +115,22 @@ class PlanReviewTests {
       .content(BASE.replace("\"occupation\":\"직장인\"","\"occupation\":\" \""))).andExpect(status().isBadRequest());
     verifyNoInteractions(gemini);
   }
+
+  @Test void includesPlannedFoodSavingsWithoutChangingCurrentCashflow() throws Exception {
+    when(gemini.review(anyString())).thenReturn(AI);
+    mvc.perform(post("/api/review-plan").contentType(MediaType.APPLICATION_JSON)
+      .content(BASE.replace("\"scenario\":null","\"allocationExpenseReduction\":130000,\"scenario\":null")))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.sections[1].status").value("checked"))
+      .andExpect(jsonPath("$.sections[1].evidence[0]").value(org.hamcrest.Matchers.containsString("여유 13,760원")))
+      .andExpect(jsonPath("$.sections[0].evidence[3]").value("월 잉여자금 1,368,930원"));
+    var data=ArgumentCaptor.forClass(String.class); verify(gemini).review(data.capture());
+    assertThat(data.getValue()).contains("\"allocationExpenseReduction\":130000","\"availableBeforeLoanRepayment\":1663760");
+  }
+  @Test void rejectsPlannedExpenseSavingsAboveActualExpenses() throws Exception {
+    mvc.perform(post("/api/review-plan").contentType(MediaType.APPLICATION_JSON)
+      .content(BASE.replace("\"scenario\":null","\"allocationExpenseReduction\":2000000,\"scenario\":null")))
+      .andExpect(status().isBadRequest());
+    verifyNoInteractions(gemini);
+  }
 }

@@ -12,6 +12,11 @@ export default function App() {
     const [customer, setCustomer] = useState(initialCustomer);
     const [allocationItems, setAllocationItems] = useState(initialAllocation);
     const [reviewData, setReviewData] = useState(null);
+    const [scenarioFocus, setScenarioFocus] = useState(null);
+    function prepareReviewItem(fieldId) {
+        setCurrentPage('scenario');
+        setScenarioFocus({ fieldId });
+    }
 
     return (
         <div className="app">
@@ -29,10 +34,10 @@ export default function App() {
                         allocationItems={allocationItems} onAllocationChange={setAllocationItems} />
                 </div>
                 <div hidden={currentPage !== 'scenario'}>
-                    <ScenarioPage customer={customer} onReviewDataChange={setReviewData} />
+                    <ScenarioPage customer={customer} onReviewDataChange={setReviewData} focusRequest={scenarioFocus} />
                 </div>
                 <div hidden={currentPage !== 'review'}>
-                    <ReviewPage customer={customer} reviewData={reviewData} allocationItems={allocationItems} />
+                    <ReviewPage customer={customer} reviewData={reviewData} allocationItems={allocationItems} onPrepare={prepareReviewItem} />
                 </div>
             </main>
         </div>

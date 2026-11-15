@@ -9,7 +9,7 @@ import {
 import { stressScenarios } from "../data/stressScenarios.js";
 import "./ScenarioPage.scss";
 
-export default function ScenarioPage({ customer, onReviewDataChange }) {
+export default function ScenarioPage({ customer, onReviewDataChange, focusRequest }) {
   const [decreaseRate, setDecreaseRate] = useState("10");
   const [expenseIncreaseRate, setExpenseIncreaseRate] = useState("0");
   const [targetAmount, setTargetAmount] = useState("");
@@ -20,6 +20,13 @@ export default function ScenarioPage({ customer, onReviewDataChange }) {
   const [shockMonths, setShockMonths] = useState("6");
   const [mcResult, setMcResult] = useState(null);
   const [mcInputs, setMcInputs] = useState(null);
+
+  useEffect(() => {
+    if (!focusRequest) return;
+    const target = document.getElementById(focusRequest.fieldId);
+    target?.scrollIntoView({ block: 'center' });
+    target?.focus({ preventScroll: true });
+  }, [focusRequest]);
 
   const incomeRate = Number(decreaseRate);
   const expenseRate = Number(expenseIncreaseRate);
@@ -587,6 +594,7 @@ export default function ScenarioPage({ customer, onReviewDataChange }) {
         <button
           type="button"
           className="scenario-page__explain-button"
+          id="run-monte-carlo"
           onClick={handleMonteCarlo}
           disabled={!isGoalValid}
         >

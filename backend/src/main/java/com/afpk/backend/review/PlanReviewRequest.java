@@ -10,7 +10,8 @@ public record PlanReviewRequest(
     @NotEmpty @Size(max=30) List<@NotNull @Valid Allocation> allocationItems,
     @Valid ScenarioAnalysisRequest scenario,
     @Valid MonteCarlo monteCarlo,
-    boolean adjustmentExceedsCapacity) {
+    boolean adjustmentExceedsCapacity,
+    @Min(0) @Max(1000000000000L) Long allocationExpenseReduction) {
   public record Customer(@Min(0) @Max(120) int age, @NotBlank @Size(max=80) String occupation,
       @NotNull @Min(0) @Max(1000000000000L) Long monthlyNetIncome,
       @NotNull @Min(0) @Max(1000000000000L) Long monthlyLivingExpenses,

@@ -40,7 +40,8 @@ public final class ReviewSections {
     result.add(section("allocation","연차별 배분 계획",excess,
         List.of(excess?"월 배분 합계가 가용 재원을 초과하는 기간이 있습니다.":"모든 기간의 월 배분 합계가 현재 가용 재원 이내입니다.",
             "배분표에 상환액이 포함되어 있으므로 배분 예산에서는 기존 월 대출상환액을 다시 빼지 않았습니다.",
-            "기준 고객정보는 매년 동일하다는 가정이며, 상품 만기·가입 자격·금리와 상환 종료 시점은 별도 확인이 필요합니다."),allocationEvidence));
+            "기준 고객정보는 매년 동일하다는 가정이며, 상품 만기·가입 자격·금리와 상환 종료 시점은 별도 확인이 필요합니다.",
+            "배분 계획에는 월 "+won((long)verified.get("allocationExpenseReduction"))+"의 지출 절감을 반영했습니다. 현금흐름과 시나리오는 현재 입력한 생활지출 기준으로 구분합니다."),allocationEvidence));
     var scenario=(Map<String,Object>)verified.get("scenario");
     if(scenario==null) {
       result.add(missing("goal","목표 · 소득과 지출 시나리오")); result.add(missing("stress","스트레스 테스트"));
