@@ -65,10 +65,14 @@ public class PlanReviewController {
   }
   Map<String,Object> prepare(PlanReviewRequest r) {
     var c=r.customer();
-    long available=c.monthlyNetIncome()-c.monthlyLivingExpenses();
+    long currentAvailable=c.monthlyNetIncome()-c.monthlyLivingExpenses();
+    long reduction=r.allocationExpenseReduction()==null?0:r.allocationExpenseReduction();
+    if(reduction>c.monthlyLivingExpenses()) throw invalid("배분 계획의 지출 절감액은 현재 생활지출을 초과할 수 없습니다.");
+    long available=currentAvailable+reduction;
     Map<String,Object> data=new LinkedHashMap<>();
     data.put("customer", c);
-    data.put("monthlySurplus", available-c.monthlyLoanPayment());
+    data.put("monthlySurplus", currentAvailable-c.monthlyLoanPayment());
+    data.put("allocationExpenseReduction",reduction);
     data.put("netWorth", c.totalAssets()-c.totalDebt());
     var rows=new ArrayList<Map<String,Object>>();
     for (var item:r.allocationItems()) if(item.monthly().size()!=r.allocationPeriods().size()) throw invalid("배분표의 기간과 월 금액 개수가 다릅니다.");
@@ -89,7 +93,7 @@ public class PlanReviewController {
     data.put("adjustmentExceedsCapacity",r.adjustmentExceedsCapacity());
     data.put("reviewAssumptions",List.of(
       "고객정보와 배분 계획은 예시 또는 사용자 입력이며 사실 확인을 거친 자료가 아니다. 자산 0원도 입력값이며 미입력이나 검증된 사실로 바꾸어 해석하지 않는다. 자산 구성과 유동성 자료 없이 유동성 위험 정도를 단정하지 않는다.",
-      "배분 예산은 실수령액-생활지출이며 학자금 상환을 포함한 배분표와 비교한다. 기존 월 대출상환액을 이중 차감하지 않는다.",
+      "배분 예산은 실수령액-(생활지출-배분계획 지출절감액)이며 학자금 상환을 포함한 배분표와 비교한다. 기존 월 대출상환액을 이중 차감하지 않는다. 현금흐름·시나리오·몬테카를로는 입력한 생활지출을 기준으로 하므로 배분표의 지출 절감을 이들 결과에 임의로 중복 적용하지 않는다.",
       "배분표의 상품별 금리·세금·가입 자격·만기와 목표별 기존 적립액은 제공되지 않았다. 결혼·주택 목표의 확정 설계안도 미제공이다.",
       "현금흐름·목표·스트레스는 서버 재계산 수치다. 몬테카를로는 범위를 검증한 브라우저 계산 결과이며 서버에서 재현 검증한 수치가 아니다.",
       "몬테카를로는 기본 고객 소득·생활지출을 연 단위 정규분포로 변동시키는 모형이며 선택한 시나리오 충격·배분표·금리·물가·이미 모은 자금은 반영하지 않는다. 목표 달성 확률을 현실의 보장이나 다른 분석과 동일한 조건으로 해석하지 않는다.",
