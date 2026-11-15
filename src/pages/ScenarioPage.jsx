@@ -260,6 +260,11 @@ export default function ScenarioPage({ customer, onReviewDataChange }) {
       <header className="scenario-page__header">
         <h1>시나리오 비교</h1>
         <p>소득과 생활 지출이 달라졌을 때 월 현금흐름을 비교합니다.</p>
+        <p>
+          기준은 설계안 적용 후 고객 정보(식비 절감 월 13만 원 반영)입니다.
+          보고서의 5년 배분 점검은 재무계획 페이지의 ‘설계안 충격 점검’에서
+          확인합니다.
+        </p>
       </header>
 
       <section className="scenario-page__settings">
@@ -406,7 +411,8 @@ export default function ScenarioPage({ customer, onReviewDataChange }) {
         <p id="goal-help">
           현재 모아둔 목표자금과 이자는 제외하고, 월 잉여자금 전액을 하나의
           목표에 저축한다고 가정합니다. 월 잉여자금이 적자이면 저축액은 0원으로
-          계산합니다.
+          계산합니다. 목표금액과 기간은 점검하려는 목표(예: 결혼 자금)에 맞게
+          직접 입력합니다.
         </p>
 
         {originalGoal && (
@@ -487,7 +493,7 @@ export default function ScenarioPage({ customer, onReviewDataChange }) {
             ? "목표금액과 남은 기간을 입력하면 부족금액을 볼 수 있습니다."
             : !isShockDurationValid
               ? `충격 기간은 0~${goalMonths}개월 사이의 정수로 입력해 주세요.`
-              : `충격이 끝나면 기존 소득·지출로 돌아간다고 가정합니다.`}
+              : `충격이 끝나면 기존 소득·지출로 돌아간다고 가정합니다. 충격이 5년 내내 지속되는 최악 가정은 재무계획 페이지의 ‘설계안 충격 점검’을 참고하세요.`}
         </p>
 
         <div className="scenario-page__table-scroll">
