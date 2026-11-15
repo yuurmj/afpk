@@ -164,3 +164,65 @@ export function simulateGoalMonteCarlo({
     p90: pick(0.9),
   };
 }
+// 보고서 설계안의 기간 구분: 1년차, 2년차, 3년차, 4~5년차(24개월)
+export const PLAN_PERIOD_MONTHS = [12, 12, 12, 24];
+
+// 5년 설계안 점검: 충격 조건에서 연차별 월 배분이 가용 재원 안에 들어가는지 계산합니다.
+// - 배분표에 학자금 상환이 포함되어 있으므로 대출상환액은 다시 빼지 않습니다.
+// - 부족액이 생기면 '결혼·주거 유동성 자금'(조건부 재배분 항목)을 먼저 줄여 충당한다고 보고,
+//   그래도 남는 부족액을 따로 계산합니다.
+export function calculatePlanStress({
+  customer,
+  allocationItems,
+  expenseReduction,
+  scenario,
+  isaStockRatio,
+  isaDropRate,
+  periodMonths = PLAN_PERIOD_MONTHS,
+}) {
+  const income = Math.round(
+    customer.monthlyNetIncome * (1 - scenario.incomeDecreaseRate / 100),
+  );
+  const baseExpenses =
+    customer.monthlyLivingExpenses -
+    (scenario.skipReduction ? 0 : expenseReduction);
+  const expenses = Math.round(
+    baseExpenses * (1 + scenario.expenseIncreaseRate / 100),
+  );
+  const available = income - expenses;
+
+  const liquidityItem = allocationItems.find((item) => item.id === 'liquidity');
+  const isaItem = allocationItems.find((item) => item.id === 'isa');
+
+  const yearly = periodMonths.map((months, index) => {
+    const allocation = allocationItems.reduce(
+      (total, item) => total + item.monthly[index],
+      0,
+    );
+    const liquidity = liquidityItem ? liquidityItem.monthly[index] : 0;
+    const gap = available - allocation;
+    const uncovered = Math.max(-gap - liquidity, 0);
+    return { months, allocation, gap, uncovered };
+  });
+
+  const cumulativeGap = yearly.reduce(
+    (total, year) => total + year.gap * year.months,
+    0,
+  );
+  const uncoveredTotal = yearly.reduce(
+    (total, year) => total + year.uncovered * year.months,
+    0,
+  );
+
+  const isaContribution = isaItem
+    ? isaItem.monthly.reduce(
+        (total, amount, index) => total + amount * periodMonths[index],
+        0,
+      )
+    : 0;
+  const isaLoss = scenario.isaCrash
+    ? Math.round(isaContribution * isaStockRatio * isaDropRate)
+    : 0;
+
+  return { available, yearly, cumulativeGap, uncoveredTotal, isaLoss };
+}

@@ -7,6 +7,7 @@ import {
   allocationPeriods,
   expenseReduction,
 } from "../data/allocationPlan.js";
+import PlanStressTest from "../components/PlanStressTest.jsx";
 import "./PlanPage.scss";
 
 export default function PlanPage({ customer, onCustomerChange, allocationItems, onAllocationChange }) {
@@ -296,6 +297,8 @@ export default function PlanPage({ customer, onCustomerChange, allocationItems, 
           환산했습니다.
         </p>
       </section>
+
+      <PlanStressTest customer={customer} allocationItems={allocationItems} />
     </section>
   );
 }
