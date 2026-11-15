@@ -6,6 +6,7 @@ import {
 import {
   allocationPeriods,
   allocationItems,
+  expenseReduction,
 } from "../data/allocationPlan.js";
 import "./PlanPage.scss";
 
@@ -15,13 +16,21 @@ export default function PlanPage({ customer, onCustomerChange }) {
   const monthlySurplus = calculateMonthlySurplus(customer);
   const netWorth = calculateNetWorth(customer);
 
-  // 배분표에는 학자금 상환이 포함되어 있으므로,
-  // 대출상환액을 빼기 전 금액(실수령액 - 생활지출)과 비교합니다.
+  // 배분표에는 학자금 상환이 포함되어 있으므로 대출상환액을 빼기 전 금액,
+  // 즉 설계안의 지출 절감을 반영한 (실수령액 - 생활지출)과 비교합니다.
   const availableForPlan =
-    customer.monthlyNetIncome - customer.monthlyLivingExpenses;
+    customer.monthlyNetIncome -
+    (customer.monthlyLivingExpenses - expenseReduction.monthly);
 
   const periodTotals = allocationPeriods.map((_, index) =>
     allocationItems.reduce((total, item) => total + item.monthly[index], 0),
+  );
+
+  // 보고서 합계 행과 같은 값: 학자금 상환·비상자금을 뺀 저축·투자 소계
+  const investmentTotals = allocationPeriods.map((_, index) =>
+    allocationItems
+      .filter((item) => !item.fixedOutflow)
+      .reduce((total, item) => total + item.monthly[index], 0),
   );
 
   function formatAmount(amount) {
@@ -204,8 +213,17 @@ export default function PlanPage({ customer, onCustomerChange }) {
               </tr>
             ))}
 
+            <tr>
+              <th scope="row">저축·투자 소계</th>
+              {investmentTotals.map((total, index) => (
+                <td className="amount" key={allocationPeriods[index]}>
+                  {formatAmount(total)}
+                </td>
+              ))}
+            </tr>
+
             <tr className="plan-page__total-row">
-              <th scope="row">배분 합계</th>
+              <th scope="row">배분 합계 (학자금·비상자금 포함)</th>
               {periodTotals.map((total, index) => (
                 <td className="amount" key={allocationPeriods[index]}>
                   {formatAmount(total)}
@@ -234,8 +252,10 @@ export default function PlanPage({ customer, onCustomerChange }) {
 
         <p className="plan-page__description">
           배분 가능 재원은 월 {formatAmount(availableForPlan)}입니다(실수령액 -
-          생활지출). 소득과 지출이 현재 수준으로 유지된다고 가정하며, 보고서의
-          만원 단위 값을 원 단위로 환산했습니다.
+          생활지출). 설계안의 {expenseReduction.label} 절감{" "}
+          {formatAmount(expenseReduction.monthly)}을 반영했으며, 소득은 현재
+          수준으로 유지된다고 가정합니다. 보고서의 만원 단위 값은 원 단위로
+          환산했습니다.
         </p>
       </section>
     </section>
