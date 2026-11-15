@@ -6,6 +6,11 @@
     box-sizing: border-box;
 }
 
+html {
+    // 페이지 길이에 따라 스크롤바가 생겼다 사라져 화면이 좌우로 흔들리지 않게 함
+    scrollbar-gutter: stable;
+}
+
 body {
     margin: 0;
     font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
