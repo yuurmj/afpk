@@ -101,3 +101,66 @@ export function calculateTemporaryShockGoal({
         exceedsMonthlyCapacity,
     };
 }
+
+function createRandom(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function randomNormal(random) {
+  const u = 1 - random();
+  const v = random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+export function simulateGoalMonteCarlo({
+  customer,
+  targetAmount,
+  remainingMonths,
+  incomeVolatility = 0.05,   // 소득 연간 변동성 (표준편차 5%)
+  expenseVolatility = 0.05,  // 지출 연간 변동성
+  runs = 1000,
+  seed = 2026,
+}) {
+  const random = createRandom(seed);
+  const totals = [];
+
+  for (let run = 0; run < runs; run++) {
+    let total = 0;
+    let incomeFactor = 1;
+    let expenseFactor = 1;
+
+    for (let month = 0; month < remainingMonths; month++) {
+      if (month % 12 === 0) {
+        incomeFactor = 1 + randomNormal(random) * incomeVolatility;
+        expenseFactor = 1 + randomNormal(random) * expenseVolatility;
+      }
+      const surplus =
+        customer.monthlyNetIncome * incomeFactor -
+        customer.monthlyLivingExpenses * expenseFactor -
+        customer.monthlyLoanPayment;
+      total += Math.max(surplus, 0); // 기존 calculateGoalShortfall과 같은 기준
+    }
+    totals.push(total);
+  }
+
+  totals.sort((a, b) => a - b);
+  const pick = (ratio) => Math.round(totals[Math.min(runs - 1, Math.floor(runs * ratio))]);
+  const successCount = totals.filter((v) => v >= targetAmount).length;
+
+  return {
+    runs,
+    incomeVolatility,
+    expenseVolatility,
+    successRate: successCount / runs,
+    p10: pick(0.1),
+    median: pick(0.5),
+    p90: pick(0.9),
+  };
+}

@@ -4,6 +4,7 @@ import {
   caculateCashflowScenario,
   calculateGoalShortfall,
   calculateTemporaryShockGoal,
+  simulateGoalMonteCarlo,
 } from "../utils/calculations.js";
 import { requestScenarioExplanation } from "../services/scenarioApi.js";
 import { stressScenarios } from "../data/stressScenarios.js";
@@ -21,6 +22,7 @@ export default function ScenarioPage({ customer }) {
   const [isExplaining, setIsExplaining] = useState(false);
   const [explanationError, setExplanationError] = useState("");
   const [shockMonths, setShockMonths] = useState("6");
+  const [mcResult, setMcResult] = useState(null);
 
   const incomeRate = Number(decreaseRate);
   const expenseRate = Number(expenseIncreaseRate);
@@ -113,7 +115,7 @@ export default function ScenarioPage({ customer }) {
 
     const goalResult = canCalculate
       ? calculateTemporaryShockGoal({
-          targetAmount: goalAmount,
+          targetAmount: goalAmount + condition.extraCost,
           remainingMonths: goalMonths,
           shockMonths: shockDuration,
           originalMonthlySurplus: originalSurplus,
@@ -124,7 +126,7 @@ export default function ScenarioPage({ customer }) {
     const revisedResult =
       canCalculate && isAdjustmentValid
         ? calculateTemporaryShockGoal({
-            targetAmount: revisedAmount,
+            targetAmount: revisedAmount + condition.extraCost,
             remainingMonths: revisedMonths,
             shockMonths: Math.min(shockDuration, revisedMonths),
             originalMonthlySurplus: originalSurplus,
@@ -143,6 +145,17 @@ export default function ScenarioPage({ customer }) {
 
   function formatAmount(amount) {
     return `${amount.toLocaleString("ko-KR")}원`;
+  }
+
+  function handleMonteCarlo() {
+    if (!isGoalValid) return;
+    setMcResult(
+      simulateGoalMonteCarlo({
+        customer,
+        targetAmount: goalAmount,
+        remainingMonths: goalMonths,
+      }),
+    );
   }
 
   async function handleExplainScenario() {
@@ -214,6 +227,8 @@ export default function ScenarioPage({ customer }) {
             }
           : null,
 
+      monteCarlo: mcResult,
+
       assumptions: [
         "금액 단위는 원, 기간 단위는 개월",
         "현재 모아둔 목표자금, 이자, 물가 변동은 제외",
@@ -231,7 +246,9 @@ export default function ScenarioPage({ customer }) {
         "저축액 초과 표시는 입력한 저축 계획을 그대로 실행하기 어렵다는 뜻",
         "최종 부족금액이 0원이어도 기간 중 적자가 있으면 별도 자금 대책이 필요",
         "기존 계획과 수정 계획은 목표금액·기간·저축액이 다를 수 있으므로 부족금액 차이만으로 우열을 단정하지 않음",
-        "스트레스 조건은 개발용 가정이며 발생 확률이나 미래 예측이 아님",
+        "스트레스 조건은 보고서의 고객 조건에서 도출한 가정이며 발생 확률이나 미래 예측이 아님",
+        "extraCost는 충격 기간과 무관하게 목표 달성까지 추가로 필요한 일회성 금액",
+        "monteCarlo는 소득·지출을 연 단위로 정규분포 변동시킨 1,000회 시뮬레이션이며 저축액은 양수 잉여자금만 합산",
         "stressTest가 null이면 유효한 스트레스 테스트 결과가 제공되지 않은 상태",
       ],
     };
@@ -458,17 +475,6 @@ export default function ScenarioPage({ customer }) {
       <section className="scenario-page__stress">
         <h2>스트레스 테스트</h2>
 
-        <p>
-          여러 소득·지출 조건에서 월 잉여자금과 목표 대비 부족금액을 비교합니다.
-          아래 조건은 개발용 예시입니다.
-        </p>
-
-        <p>
-          수정 계획은 아래 ‘계획 조정’ 입력값을 사용합니다. 계획한 월 저축액이
-          잉여자금을 넘으면, 실제 가능한 금액으로 부족금액을 계산하고 초과
-          여부를 별도로 표시합니다.
-        </p>
-
         <div className="scenario-page__inputs">
           <div>
             <label htmlFor="shock-months">충격 지속 기간 (개월)</label>
@@ -488,32 +494,22 @@ export default function ScenarioPage({ customer }) {
 
         <p id="shock-duration-help">
           {!isGoalValid
-            ? "목표금액과 남은 기간을 먼저 입력해 주세요."
+            ? "목표금액과 남은 기간을 입력하면 부족금액을 볼 수 있습니다."
             : !isShockDurationValid
               ? `충격 기간은 0~${goalMonths}개월 사이의 정수로 입력해 주세요.`
-              : `지금부터 ${shockDuration}개월간 충격이 지속되고, 이후에는 기존 소득·지출로 돌아온다고 가정합니다.`}
+              : `충격이 끝나면 기존 소득·지출로 돌아간다고 가정합니다.`}
         </p>
-
-        {!isGoalValid && (
-          <p>
-            위에서 목표금액과 남은 기간을 입력하면 목표 대비 부족금액도 함께
-            표시됩니다.
-          </p>
-        )}
 
         <div className="scenario-page__table-scroll">
           <table>
-            <caption>
-              기존 계획과 수정 계획 각각의 목표금액·기간에 동일한 충격을
-              적용합니다. 충격 종료 후에는 기존 소득·지출로 복귀하며, 현재
-              목표자금과 이자는 제외합니다.
-            </caption>
+            <caption>가정별 스트레스 테스트 결과</caption>
 
             <thead>
               <tr>
                 <th scope="col">조건</th>
                 <th scope="col">소득 감소</th>
                 <th scope="col">지출 증가</th>
+                <th scope="col">추가 필요자금</th>
                 <th scope="col">충격 중 월 잉여자금</th>
                 <th scope="col">기존 계획 부족금액</th>
                 <th scope="col">수정 계획 부족금액</th>
@@ -524,10 +520,15 @@ export default function ScenarioPage({ customer }) {
             <tbody>
               {stressResults.map((result) => (
                 <tr key={result.id}>
-                  <th scope="row">{result.name}</th>
+                  <th scope="row">
+                    {result.name}
+                    <br />
+                    <small>{result.description}</small>
+                  </th>
 
                   <td>{result.incomeDecreaseRate}%</td>
                   <td>{result.expenseIncreaseRate}%</td>
+                  <td className="amount">{formatAmount(result.extraCost)}</td>
 
                   <td className="amount">
                     {formatAmount(result.monthlySurplus)}
@@ -570,6 +571,64 @@ export default function ScenarioPage({ customer }) {
             </tbody>
           </table>
         </div>
+        <details className="scenario-page__criteria">
+          <summary>계산 기준</summary>
+          <p>
+            표의 충격 조건은 보고서의 고객 조건(부모 지원, 주택 목표,
+            청년미래적금)을 바탕으로 설정한 가정이며 발생 확률이나 예측이
+            아닙니다. 소득 감소와 지출 증가는 충격 지속 기간 동안만 적용되고,
+            추가 필요자금은 기간과 관계없이 목표금액에 더해집니다(주택 목표
+            기준). 기존 계획과 수정 계획에 같은 충격을 적용하며, 현재 모아둔
+            목표자금과 이자는 제외합니다. 수정 계획은 ‘계획 조정’의 값을
+            사용하고, 계획한 월 저축액이 잉여자금을 넘으면 실제로 저축 가능한
+            금액으로 부족금액을 계산합니다.
+          </p>
+        </details>
+      </section>
+
+      <section className="scenario-page__stress">
+        <h2>몬테카를로 시뮬레이션</h2>
+        <p>
+          소득과 생활지출을 매년 무작위로 변동시켜 {goalMonths || "N"}개월 뒤
+          목표 달성 확률을 1,000회 계산합니다.
+        </p>
+
+        <button
+          type="button"
+          className="scenario-page__explain-button"
+          onClick={handleMonteCarlo}
+          disabled={!isGoalValid}
+        >
+          시뮬레이션 실행
+        </button>
+
+        {mcResult && (
+          <table>
+            <caption>
+              소득·지출 연간 변동성 각 {mcResult.incomeVolatility * 100}% 가정
+            </caption>
+            <tbody>
+              <tr>
+                <th scope="row">목표 달성 확률</th>
+                <td className="amount">
+                  {(mcResult.successRate * 100).toFixed(1)}%
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">하위 10% 예상 저축액</th>
+                <td className="amount">{formatAmount(mcResult.p10)}</td>
+              </tr>
+              <tr>
+                <th scope="row">중앙값 예상 저축액</th>
+                <td className="amount">{formatAmount(mcResult.median)}</td>
+              </tr>
+              <tr>
+                <th scope="row">상위 10% 예상 저축액</th>
+                <td className="amount">{formatAmount(mcResult.p90)}</td>
+              </tr>
+            </tbody>
+          </table>
+        )}
       </section>
 
       <section className="scenario-page__adjustment">

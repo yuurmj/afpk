@@ -15,15 +15,20 @@
         }
     }
 
-    &__settings, &__goal, &__adjustment, &__explanation, &__stress {
-        padding-block: 28px;
+    > section + section {
+        margin-top: 20px;
+        padding-top: 20px;
         border-top: 1px solid vars.$border-color;
+    }
 
-        h2 {
-            margin-bottom: 20px;
-            font-size: 16px;
-        }
+    > section > h2 {
+        margin-bottom: 16px;
+        color: vars.$text-primary;
+        font-size: 17px;
+        font-weight: 600;
+    }
 
+    &__settings, &__goal, &__adjustment, &__explanation, &__stress {
         label {
             display: block;
             margin-bottom: 8px;
@@ -52,9 +57,6 @@
     }
 
     &__results, &__goal, &__adjustment, &__stress {
-        padding-block: 28px;
-        border-top: 1px solid vars.$border-color;
-
         h2 {
             font-size: 16px;
         }
@@ -68,8 +70,9 @@
 
         caption {
             margin-bottom: 12px;
-            color: vars.$text-secondary;
-            font-size: 12px;
+            color: vars.$text-primary;
+            font-size: 14px;
+            font-weight: 600;
             text-align: left;
         }
 
@@ -170,11 +173,44 @@
         }
 
         table {
-            min-width: 680px;
+            min-width: 960px;
+        }
+
+        th,
+        td {
+            word-break: keep-all;
+        }
+
+        td.amount {
+            white-space: nowrap;
         }
 
         tbody th {
             white-space: nowrap;
+        }
+
+        > button {
+            margin-top: 16px;
+        }
+    }
+
+    &__criteria {
+        margin-top: 12px;
+
+        summary {
+            width: fit-content;
+            padding: 6px 10px;
+            list-style-position: inside;
+            border: 1px solid vars.$border-color;
+            border-radius: 4px;
+            color: vars.$text-primary;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+
+            &:hover {
+                background-color: vars.$bg-hover;
+            }
         }
     }
 

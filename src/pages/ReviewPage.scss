@@ -1,0 +1,18 @@
+@use '../styles/variables' as vars;
+
+// 다른 페이지와 같은 너비·제목 간격을 사용합니다.
+.review-page {
+    width: 100%;
+    max-width: 1040px;
+    margin-inline: auto;
+
+    &__header {
+        margin-bottom: 32px;
+
+        p {
+            margin-top: 8px;
+            color: vars.$text-secondary;
+            font-size: 14px;
+        }
+    }
+}

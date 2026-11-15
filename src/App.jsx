@@ -18,15 +18,18 @@ export default function App() {
             />
 
             <main className="app__content">
-                {currentPage === 'plan' && (
-                    <PlanPage 
-                        customer={customer} 
+                {/* 페이지를 숨기기만 하고 유지해 입력값이 사라지지 않게 합니다. */}
+                <div hidden={currentPage !== 'plan'}>
+                    <PlanPage
+                        customer={customer}
                         onCustomerChange={setCustomer} />
-                )}
-                {currentPage === 'scenario' && (
+                </div>
+                <div hidden={currentPage !== 'scenario'}>
                     <ScenarioPage customer={customer} />
-                )}
-                {currentPage === 'review' && <ReviewPage />}
+                </div>
+                <div hidden={currentPage !== 'review'}>
+                    <ReviewPage />
+                </div>
             </main>
         </div>
     );
