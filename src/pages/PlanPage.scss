@@ -276,3 +276,13 @@
         font-weight: 600;
     }
 }
+
+.plan-page {
+  &__form-help { grid-column: 1 / -1; font-size: 13px; color: #525d70; }
+  &__goals > button { margin-top: 16px; }
+  &__allocation-form { margin-top: 18px; padding: 20px; background: #f6f8fb; border: 1px solid #dce1e9; border-radius: 8px;
+    fieldset { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; padding: 14px; margin: 16px 0; border: 1px solid #dce1e9; }
+    label { font-size: 13px; } input { width: 100%; padding: 8px; margin-top: 6px; border: 1px solid #bdc6d4; border-radius: 4px; }
+  }
+}
+@media(max-width: 650px) { .plan-page__allocation-form fieldset { grid-template-columns: 1fr 1fr; } }

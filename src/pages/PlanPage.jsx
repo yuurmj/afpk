@@ -5,12 +5,13 @@ import {
 } from "../utils/calculations.js";
 import {
   allocationPeriods,
-  allocationItems,
 } from "../data/allocationPlan.js";
 import "./PlanPage.scss";
 
-export default function PlanPage({ customer, onCustomerChange }) {
+export default function PlanPage({ customer, onCustomerChange, allocationItems, onAllocationChange }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [editingAllocation, setEditingAllocation] = useState(false);
+  const [formError, setFormError] = useState("");
 
   const monthlySurplus = calculateMonthlySurplus(customer);
   const netWorth = calculateNetWorth(customer);
@@ -33,14 +34,30 @@ export default function PlanPage({ customer, onCustomerChange }) {
 
     const formData = new FormData(event.currentTarget);
 
+    const numbers = ["age", "income", "expenses", "repayment", "assets", "debt"].map(name => Number(formData.get(name)));
+    if (numbers.some(value => !Number.isSafeInteger(value) || value < 0 || value > 1e12) || numbers[0] > 120 || !String(formData.get("occupation")).trim()) {
+      setFormError("나이·금액은 허용 범위의 정수로, 직업은 빈칸 없이 입력해 주세요."); return;
+    }
+    setFormError("");
     onCustomerChange({
       ...customer,
+      age: numbers[0], occupation: String(formData.get("occupation")).trim(),
+      totalAssets: numbers[4], totalDebt: numbers[5],
       monthlyNetIncome: Number(formData.get("income")),
       monthlyLivingExpenses: Number(formData.get("expenses")),
       monthlyLoanPayment: Number(formData.get("repayment")),
     });
 
     setIsEditing(false);
+  }
+
+  function handleAllocationSave(event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const updated = allocationItems.map(item => ({ ...item,
+      monthly: item.monthly.map((_, index) => Number(form.get(`${item.id}-${index}`))) }));
+    if (updated.some(item => item.monthly.some(value => !Number.isSafeInteger(value) || value < 0 || value > 1e12))) return;
+    onAllocationChange(updated); setEditingAllocation(false);
   }
 
   return (
@@ -58,9 +75,9 @@ export default function PlanPage({ customer, onCustomerChange }) {
           className="plan-page__edit-button"
           aria-expanded={isEditing}
           aria-controls="customer-edit-form"
-          onClick={() => setIsEditing(!isEditing)}
+          onClick={() => { setIsEditing(!isEditing); setFormError(""); }}
         >
-          {isEditing ? "취소" : "수정"}
+          {isEditing ? "입력 취소" : "고객정보 수정"}
         </button>
       </header>
 
@@ -70,12 +87,18 @@ export default function PlanPage({ customer, onCustomerChange }) {
           className="plan-page__form"
           onSubmit={handleSubmit}
         >
+          <p className="plan-page__form-help">가상 고객의 정보를 입력하세요. 금액은 원 단위이며, 현재 입력값은 이 화면을 새로고침하면 초기화됩니다.</p>
+          <label>나이 (세)<input name="age" type="number" min="0" max="120" step="1" defaultValue={customer.age} required /></label>
+          <label>직업<input name="occupation" type="text" maxLength="80" defaultValue={customer.occupation} required /></label>
+          <label>총자산 (원)<input name="assets" type="number" min="0" max="1000000000000" step="1" defaultValue={customer.totalAssets} required /></label>
+          <label>총부채 (원)<input name="debt" type="number" min="0" max="1000000000000" step="1" defaultValue={customer.totalDebt} required /></label>
           <label>
             월 실수령액 (원)
             <input
               name="income"
               type="number"
               min="0"
+              max="1000000000000"
               step="1"
               defaultValue={customer.monthlyNetIncome}
               required
@@ -88,6 +111,7 @@ export default function PlanPage({ customer, onCustomerChange }) {
               name="expenses"
               type="number"
               min="0"
+              max="1000000000000"
               step="1"
               defaultValue={customer.monthlyLivingExpenses}
               required
@@ -100,12 +124,14 @@ export default function PlanPage({ customer, onCustomerChange }) {
               name="repayment"
               type="number"
               min="0"
+              max="1000000000000"
               step="1"
               defaultValue={customer.monthlyLoanPayment}
               required
             />
           </label>
-          <button type="submit">저장</button>
+          {formError && <p role="alert" className="plan-page__form-help">{formError}</p>}
+          <button type="submit">고객정보 저장</button>
         </form>
       )}
 
@@ -156,7 +182,7 @@ export default function PlanPage({ customer, onCustomerChange }) {
           </div>
 
           <div>
-            <dt>학자금 대출</dt>
+            <dt>총부채</dt>
             <dd className="amount">{formatAmount(customer.totalDebt)}</dd>
           </div>
 
@@ -171,10 +197,22 @@ export default function PlanPage({ customer, onCustomerChange }) {
         <h2 id="savings-plan-heading">연차별 월 저축 배분</h2>
 
         <p className="plan-page__description">
-          팀 재무설계안의 배분 계획을, 월 실수령액에서 생활지출을 뺀 금액과
-          비교합니다. 학자금 상환은 배분표에 포함되어 있습니다.
+          입력한 배분 계획을, 월 실수령액에서 생활지출을 뺀 금액과
+          비교합니다. 기본값은 팀 보고서 예시이며 다른 고객을 검토할 때에는 배분 계획도 함께 수정하세요. 학자금 상환은 배분표에 포함되어 있습니다.
         </p>
 
+        <button type="button" className="plan-page__edit-button" aria-expanded={editingAllocation}
+          onClick={() => setEditingAllocation(!editingAllocation)}>{editingAllocation ? "배분 수정 취소" : "배분 계획 수정"}</button>
+        {editingAllocation && <form className="plan-page__allocation-form" onSubmit={handleAllocationSave}>
+          <p>고객에게 맞는 항목별 월 배분액을 입력하세요. 각 기간의 모든 금액은 월 기준입니다.</p>
+          {allocationItems.map(item => <fieldset key={item.id}><legend>{item.name}</legend>
+            {item.monthly.map((amount, index) => <label key={index}>{allocationPeriods[index]} (원)
+              <input aria-label={`${item.name} ${allocationPeriods[index]} (원)`} name={`${item.id}-${index}`} type="number"
+                min="0" max="1000000000000" step="1" defaultValue={amount} required />
+            </label>)}
+          </fieldset>)}
+          <button className="plan-page__edit-button" type="submit">배분 계획 저장</button>
+        </form>}
         <table
           className="plan-page__goal-table"
           aria-labelledby="savings-plan-heading"

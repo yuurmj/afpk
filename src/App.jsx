@@ -4,11 +4,14 @@ import PlanPage from './pages/PlanPage.jsx';
 import ScenarioPage from './pages/ScenarioPage.jsx';
 import ReviewPage from './pages/ReviewPage.jsx';
 import {customer as initialCustomer} from './data/customer.js';
+import { allocationItems as initialAllocation } from './data/allocationPlan.js';
 import './App.scss';
 
 export default function App() {
     const [currentPage, setCurrentPage] = useState('plan');
     const [customer, setCustomer] = useState(initialCustomer);
+    const [allocationItems, setAllocationItems] = useState(initialAllocation);
+    const [reviewData, setReviewData] = useState(null);
 
     return (
         <div className="app">
@@ -22,13 +25,14 @@ export default function App() {
                 <div hidden={currentPage !== 'plan'}>
                     <PlanPage
                         customer={customer}
-                        onCustomerChange={setCustomer} />
+                        onCustomerChange={setCustomer}
+                        allocationItems={allocationItems} onAllocationChange={setAllocationItems} />
                 </div>
                 <div hidden={currentPage !== 'scenario'}>
-                    <ScenarioPage customer={customer} />
+                    <ScenarioPage customer={customer} onReviewDataChange={setReviewData} />
                 </div>
                 <div hidden={currentPage !== 'review'}>
-                    <ReviewPage />
+                    <ReviewPage customer={customer} reviewData={reviewData} allocationItems={allocationItems} />
                 </div>
             </main>
         </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   calculateMonthlySurplus,
   caculateCashflowScenario,
@@ -6,11 +6,10 @@ import {
   calculateTemporaryShockGoal,
   simulateGoalMonteCarlo,
 } from "../utils/calculations.js";
-import { requestScenarioExplanation } from "../services/scenarioApi.js";
 import { stressScenarios } from "../data/stressScenarios.js";
 import "./ScenarioPage.scss";
 
-export default function ScenarioPage({ customer }) {
+export default function ScenarioPage({ customer, onReviewDataChange }) {
   const [decreaseRate, setDecreaseRate] = useState("10");
   const [expenseIncreaseRate, setExpenseIncreaseRate] = useState("0");
   const [targetAmount, setTargetAmount] = useState("");
@@ -18,11 +17,9 @@ export default function ScenarioPage({ customer }) {
   const [adjustedTargetAmount, setAdjustedTargetAmount] = useState("");
   const [adjustedMonths, setAdjustedTMonths] = useState("");
   const [adjustedMonthlySavings, setAdjustedMonthlySavings] = useState("");
-  const [explanation, setExplanation] = useState("");
-  const [isExplaining, setIsExplaining] = useState(false);
-  const [explanationError, setExplanationError] = useState("");
   const [shockMonths, setShockMonths] = useState("6");
   const [mcResult, setMcResult] = useState(null);
+  const [mcInputs, setMcInputs] = useState(null);
 
   const incomeRate = Number(decreaseRate);
   const expenseRate = Number(expenseIncreaseRate);
@@ -149,6 +146,7 @@ export default function ScenarioPage({ customer }) {
 
   function handleMonteCarlo() {
     if (!isGoalValid) return;
+    setMcInputs(JSON.stringify([customer, goalAmount, goalMonths]));
     setMcResult(
       simulateGoalMonteCarlo({
         customer,
@@ -158,13 +156,11 @@ export default function ScenarioPage({ customer }) {
     );
   }
 
-  async function handleExplainScenario() {
-    if (!scenarioGoal || isExplaining) return;
-
-    setIsExplaining(true);
-    setExplanation("");
-    setExplanationError("");
-
+  useEffect(() => {
+    if (!scenarioGoal) {
+      onReviewDataChange?.({ scenario: null, adjustmentExceedsCapacity: false });
+      return;
+    }
     const data = {
       conditions: {
         incomeDecreaseRate: incomeRate,
@@ -220,6 +216,7 @@ export default function ScenarioPage({ customer }) {
                 name: result.name,
                 incomeDecreaseRate: result.incomeDecreaseRate,
                 expenseIncreaseRate: result.expenseIncreaseRate,
+                extraCost: result.extraCost,
                 stressedMonthlySurplus: result.monthlySurplus,
                 originalResult: result.goalResult,
                 revisedResult: result.revisedResult,
@@ -227,7 +224,7 @@ export default function ScenarioPage({ customer }) {
             }
           : null,
 
-      monteCarlo: mcResult,
+      monteCarlo: mcInputs === JSON.stringify([customer, goalAmount, goalMonths]) ? mcResult : null,
 
       assumptions: [
         "금액 단위는 원, 기간 단위는 개월",
@@ -252,18 +249,11 @@ export default function ScenarioPage({ customer }) {
         "stressTest가 null이면 유효한 스트레스 테스트 결과가 제공되지 않은 상태",
       ],
     };
+    onReviewDataChange?.({ scenario: data, adjustmentExceedsCapacity: exceedsAvailableSavings });
 
-    try {
-      const result = await requestScenarioExplanation(data);
-      setExplanation(result);
-    } catch (error) {
-      setExplanationError(
-        error instanceof Error ? error.message : "설명을 불러오지 못했습니다.",
-      );
-    } finally {
-      setIsExplaining(false);
-    }
-  }
+  }, [customer, decreaseRate, expenseIncreaseRate, targetAmount, remainingMonths,
+    adjustedTargetAmount, adjustedMonths, adjustedMonthlySavings, shockMonths,
+    mcResult, mcInputs, onReviewDataChange]);
 
   return (
     <section className="scenario-page">
@@ -749,42 +739,7 @@ export default function ScenarioPage({ customer }) {
         )}
       </section>
 
-      <section className="scenario-page__explanation">
-        <h2>계산 결과 설명</h2>
-        <p className="scenario-page__explanation-help">
-          입력한 조건과 계산 결과를 바탕으로, 부족금액이 발생한 원인과 계획 조정
-          시 고려할 점을 설명합니다.
-        </p>
 
-        <button
-          type="button"
-          className="scenario-page__explain-button"
-          onClick={handleExplainScenario}
-          disabled={!scenarioGoal || isExplaining}
-        >
-          {isExplaining ? "설명 불러오는 중…" : "계산 결과 설명 보기"}
-        </button>
-
-        {!scenarioGoal && (
-          <p className="scenario-page__explanation-help">
-            변경 조건과 목표금액, 남은 기간을 먼저 입력해 주세요.
-          </p>
-        )}
-
-        <div aria-live="polite" aria-busy={isExplaining}>
-          {explanationError && (
-            <p className="scenario-page__explanation-error">
-              {explanationError}
-            </p>
-          )}
-
-          {explanation && (
-            <div className="scenario-page__explanation-result">
-              {explanation}
-            </div>
-          )}
-        </div>
-      </section>
     </section>
   );
 }
