@@ -1,6 +1,6 @@
 const guides = {
   goal: {
-    description: '목표금액과 기간을 정하면, 현재 저축으로 목표에 도달할 수 있는지 확인할 수 있어요.',
+    description: '5년 설계안 검토와 별도로, 직접 정한 목표금액에 도달할 수 있는지 추가로 확인할 수 있어요.',
     steps: '목표금액과 남은 기간을 입력해 보세요.',
     action: '목표 입력하기', fieldId: 'target-amount',
   },

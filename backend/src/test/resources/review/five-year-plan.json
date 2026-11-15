@@ -1,0 +1,16 @@
+{
+  "customer": {"age":32,"occupation":"직장인","monthlyNetIncome":3019950,"monthlyLivingExpenses":1486190,"monthlyLoanPayment":164830,"totalAssets":0,"totalDebt":8000000},
+  "allocationPeriods":["1년차","2년차","3년차","4~5년차"],
+  "allocationItems":[
+    {"id":"student-loan","name":"학자금 상환","monthly":[670000,0,0,0]},
+    {"id":"emergency","name":"비상자금 적립","monthly":[410000,260000,0,0]},
+    {"id":"youth-savings","name":"청년미래적금","monthly":[500000,500000,500000,0]},
+    {"id":"subscription","name":"청약","monthly":[70000,200000,200000,200000]},
+    {"id":"isa","name":"ISA","monthly":[0,690000,490000,490000]},
+    {"id":"irp","name":"IRP","monthly":[0,0,200000,200000]},
+    {"id":"liquidity","name":"결혼·주거 유동성","monthly":[0,0,260000,760000]}
+  ],
+  "allocationExpenseReduction":130000,
+  "planStress":{"periodMonths":[12,12,12,24],"isaStockRatio":0.6,"isaDropRate":0.35},
+  "scenario":null,"monteCarlo":null,"adjustmentExceedsCapacity":false
+}

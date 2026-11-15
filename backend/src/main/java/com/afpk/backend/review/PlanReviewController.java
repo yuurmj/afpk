@@ -75,13 +75,19 @@ public class PlanReviewController {
     data.put("allocationExpenseReduction",reduction);
     data.put("netWorth", c.totalAssets()-c.totalDebt());
     var rows=new ArrayList<Map<String,Object>>();
-    for (var item:r.allocationItems()) if(item.monthly().size()!=r.allocationPeriods().size()) throw invalid("배분표의 기간과 월 금액 개수가 다릅니다.");
+    var ids=new HashSet<String>();
+    for (var item:r.allocationItems()) {
+      if(item.monthly().size()!=r.allocationPeriods().size()) throw invalid("배분표의 기간과 월 금액 개수가 다릅니다.");
+      if(!ids.add(item.id())) throw invalid("배분 항목의 식별자는 중복될 수 없습니다.");
+    }
     for(int i=0;i<r.allocationPeriods().size();i++) {
       long total=0; for(var item:r.allocationItems()) total+=item.monthly().get(i);
       rows.add(Map.of("period",r.allocationPeriods().get(i),"monthlyAllocationTotal",total,
           "availableBeforeLoanRepayment",available,"monthlyBudgetExcess",Math.max(total-available,0)));
     }
     data.put("allocationItems",r.allocationItems()); data.put("allocationReview",rows);
+    data.put("planStress",PlanStressCalculator.calculate(r,reduction));
+    data.put("reviewScope","보고서의 5년 배분 계획과 충격 상황을 점검한다. 주택·결혼의 상세 목표 설계와 금융상품 적합성은 검증 범위에 포함되지 않는다. 사용자가 직접 입력한 목표·몬테카를로·수정 계획은 별도의 선택 분석이다.");
     if(r.scenario()!=null) {
       var cash=r.scenario().cashflow();
       if(!cash.originalIncome().equals(c.monthlyNetIncome()) || !cash.originalExpenses().equals(c.monthlyLivingExpenses())
@@ -94,7 +100,8 @@ public class PlanReviewController {
     data.put("reviewAssumptions",List.of(
       "고객정보와 배분 계획은 예시 또는 사용자 입력이며 사실 확인을 거친 자료가 아니다. 자산 0원도 입력값이며 미입력이나 검증된 사실로 바꾸어 해석하지 않는다. 자산 구성과 유동성 자료 없이 유동성 위험 정도를 단정하지 않는다.",
       "배분 예산은 실수령액-(생활지출-배분계획 지출절감액)이며 학자금 상환을 포함한 배분표와 비교한다. 기존 월 대출상환액을 이중 차감하지 않는다. 현금흐름·시나리오·몬테카를로는 입력한 생활지출을 기준으로 하므로 배분표의 지출 절감을 이들 결과에 임의로 중복 적용하지 않는다.",
-      "배분표의 상품별 금리·세금·가입 자격·만기와 목표별 기존 적립액은 제공되지 않았다. 결혼·주택 목표의 확정 설계안도 미제공이다.",
+      "배분표의 상품별 금리·세금·가입 자격·만기와 목표별 기존 적립액은 제공되지 않았다. 팀에서 주택·결혼의 상세 목표 설계를 보고서 범위에서 제외했으므로 이를 보고서의 누락이나 필수 입력 오류로 단정하지 않는다. 직접 목표를 설정하는 기능은 선택 사항이다.",
+      "planStress는 보고서의 5년 내내 충격이 지속되는 배분 점검이며 서버에서 재계산했다. scenario.stressTest는 사용자가 선택한 목표의 일시 충격·회복 분석이다. 두 분석의 기간·절감 조건·자금 용도를 섞거나 부족액과 ISA 평가손실을 더하지 않는다.",
       "현금흐름·목표·스트레스는 서버 재계산 수치다. 몬테카를로는 범위를 검증한 브라우저 계산 결과이며 서버에서 재현 검증한 수치가 아니다.",
       "몬테카를로는 기본 고객 소득·생활지출을 연 단위 정규분포로 변동시키는 모형이며 선택한 시나리오 충격·배분표·금리·물가·이미 모은 자금은 반영하지 않는다. 목표 달성 확률을 현실의 보장이나 다른 분석과 동일한 조건으로 해석하지 않는다.",
       "음수 잉여자금은 몬테카를로에서 0으로 잘리므로 적자 조달 위험이 별도로 남는다. 미실행·미입력 분석은 null이며 수치를 추측하지 않는다."));

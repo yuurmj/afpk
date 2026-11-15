@@ -44,7 +44,7 @@ public final class ReviewSections {
             "배분 계획에는 월 "+won((long)verified.get("allocationExpenseReduction"))+"의 지출 절감을 반영했습니다. 현금흐름과 시나리오는 현재 입력한 생활지출 기준으로 구분합니다."),allocationEvidence));
     var scenario=(Map<String,Object>)verified.get("scenario");
     if(scenario==null) {
-      result.add(missing("goal","목표 · 소득과 지출 시나리오")); result.add(missing("stress","스트레스 테스트"));
+      result.add(missing("goal","추가 목표 · 소득과 지출 시나리오"));
     } else {
       var goal=(Map<String,Object>)scenario.get("goal");
       var original=(GoalResult)goal.get("originalResult"); var changed=(GoalResult)goal.get("scenarioResult");
@@ -55,23 +55,8 @@ public final class ReviewSections {
           List.of("목표 "+won((long)goal.get("targetAmount"))+" / 기간 "+goal.get("remainingMonths")+"개월",
               "기본 예상 저축 "+won(original.projectedSavings())+" / 부족 "+won(original.shortfall()),
               "조건 변경 후 월 저축 가능 "+won(changed.monthlySavings())+" / 예상 저축 "+won(changed.projectedSavings())+" / 부족 "+won(changed.shortfall()))));
-      var stress=(Map<String,Object>)scenario.get("stressTest");
-      if(stress==null) result.add(missing("stress","스트레스 테스트"));
-      else {
-        var stressRows=(List<Map<String,Object>>)stress.get("scenarios"); var evidence=new ArrayList<String>();
-        boolean risk=false;
-        for(var row:stressRows) {
-          var originalShock=(ShockResult)row.get("originalResult"); var revised=(ShockResult)row.get("revisedResult");
-          risk |= originalShock.shortfall()>0 || originalShock.hasMonthlyDeficit() || (revised!=null && (revised.exceedsMonthlyCapacity() || revised.hasMonthlyDeficit()));
-          evidence.add(row.get("name")+": 추가 필요자금 "+won((long)row.get("extraCost"))+" / 기존 계획 부족 "+won(originalShock.shortfall())
-              +" / 기간 중 적자 "+(originalShock.hasMonthlyDeficit()?"있음":"없음")
-              +(revised==null?"":" / 수정 계획 부족 "+won(revised.shortfall())+" / 수정 저축액 한도 초과 "+(revised.exceedsMonthlyCapacity()?"있음":"없음")));
-        }
-        result.add(section("stress","스트레스 테스트",risk,
-            List.of("충격은 "+stress.get("shockMonths")+"개월 동안 적용한 뒤 기존 소득·지출로 복귀합니다.",
-                "추가 필요자금은 목표에 한 번 더했습니다. 각 충격은 예시이며 발생 확률이나 확정된 전망이 아닙니다."),evidence));
-      }
     }
+    result.add(buildStress(verified,scenario));
     var mc=r.monteCarlo();
     if(mc==null) result.add(missing("monteCarlo","몬테카를로 시뮬레이션"));
     else result.add(section("monteCarlo","몬테카를로 시뮬레이션",true,
@@ -97,5 +82,40 @@ public final class ReviewSections {
               "월 저축 "+won((long)adjusted.get("monthlySavings"))+" / 예상 저축 "+won(goal.projectedSavings())+" / 부족 "+won(goal.shortfall()))));
     }
     return List.copyOf(result);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Section buildStress(Map<String,Object> verified, Map<String,Object> scenario) {
+    var plan=(PlanStressCalculator.Result)verified.get("planStress");
+    var temporary=scenario==null?null:(Map<String,Object>)scenario.get("stressTest");
+    if(plan==null && temporary==null) return missing("stress","스트레스 테스트");
+    var findings=new ArrayList<String>(); var evidence=new ArrayList<String>(); boolean risk=false;
+    if(plan!=null) {
+      findings.add("보고서의 5년 배분 계획을 6가지 충격 조건으로 점검했습니다. 목표금액 입력은 필요하지 않습니다.");
+      findings.add("소득·지출 충격은 5년 내내 지속하는 가정이며 발생 확률이나 예측이 아닙니다. 식비 절감 "+won((long)verified.get("allocationExpenseReduction"))+"을 반영하고(미이행 조건 제외), 학자금 상환은 배분표에 포함하여 다시 차감하지 않았습니다.");
+      findings.add("충격으로 생긴 부족액을 유동성 배분 축소로 일부 메우는 계산이며, 결혼·주거 적립액도 줄어듭니다. 기존 현금 잔액과 이전 기간의 여유금을 이월한 계산은 아닙니다.");
+      findings.add("ISA 평가손실은 현금흐름과 별개입니다. 주택·결혼의 상세 목표 설계와 상품 적합성은 검증 범위에 포함되지 않습니다.");
+      for(var row:plan.scenarios()) {
+        risk |= row.periods().stream().anyMatch(period -> period.gap()<0) || row.isaLoss()>0;
+        String periods=row.periods().stream().map(period -> period.name()+" 월 과부족 "+won(period.gap())).reduce((a,b)->a+" · "+b).orElse("");
+        evidence.add("[5년 설계안] "+row.name()+": 충격 후 소득 "+won(row.income())+" / 절감·충격 반영 생활지출 "+won(row.livingExpensesAfterReductionAndShock())
+            +" / 월 가용 재원 "+won(row.available())+"(학자금 상환은 배분표에 포함) / "+periods
+            +" / 5년 누적 과부족 "+won(row.cumulativeGap())+" / 유동성 배분 활용 후 부족 "+won(row.uncoveredTotal())+" / ISA 평가손실 "+won(row.isaLoss()));
+      }
+      evidence.add("ISA 손실 가정: 5년 납입액 "+won(plan.isaContribution())+" · 주식 비중 "+String.format(Locale.KOREA,"%.0f%%",plan.isaStockRatio()*100)
+          +" · 주식 하락률 "+String.format(Locale.KOREA,"%.0f%%",plan.isaDropRate()*100));
+    }
+    if(temporary!=null) {
+      findings.add("추가 목표의 일시 충격은 별도 분석입니다. "+temporary.get("shockMonths")+"개월 적용 후 기존 소득·지출로 복귀하며, 5년 설계안 결과와 합산하지 않습니다.");
+      findings.add("추가 목표의 추가 필요자금은 해당 목표에 한 번 더했습니다. 각 충격은 예시이며 발생 확률이나 확정된 전망이 아닙니다.");
+      for(var row:(List<Map<String,Object>>)temporary.get("scenarios")) {
+        var original=(ShockResult)row.get("originalResult"); var revised=(ShockResult)row.get("revisedResult");
+        risk |= original.shortfall()>0 || original.hasMonthlyDeficit() || (revised!=null && (revised.exceedsMonthlyCapacity() || revised.hasMonthlyDeficit()));
+        evidence.add("[추가 목표의 일시 충격] "+row.get("name")+": 추가 필요자금 "+won((long)row.get("extraCost"))+" / 기존 계획 부족 "+won(original.shortfall())
+            +" / 기간 중 적자 "+(original.hasMonthlyDeficit()?"있음":"없음")
+            +(revised==null?"":" / 수정 계획 부족 "+won(revised.shortfall())+" / 수정 저축액 한도 초과 "+(revised.exceedsMonthlyCapacity()?"있음":"없음")));
+      }
+    }
+    return section("stress",plan==null?"스트레스 테스트":"5년 설계안 · 스트레스 테스트",risk,findings,evidence);
   }
 }

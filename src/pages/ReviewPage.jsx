@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { allocationPeriods, expenseReduction } from "../data/allocationPlan.js";
 import { requestPlanReview } from "../services/reviewApi.js";
 import ReviewChat from "../components/ReviewChat.jsx";
 import { calculateMonthlySurplus } from "../utils/calculations.js";
 import { getReviewGuide } from "../utils/reviewGuides.js";
+import { createPlanReviewPayload } from "../utils/planReviewContext.js";
 import "./ReviewPage.scss";
 
 export default function ReviewPage({ customer, reviewData, allocationItems, onPrepare }) {
@@ -13,13 +13,7 @@ export default function ReviewPage({ customer, reviewData, allocationItems, onPr
   const active = useRef(null);
   const [view, setView] = useState("chat");
   const tabButtons = useRef([]);
-  const payload = JSON.stringify({
-    customer, allocationPeriods, allocationItems,
-    allocationExpenseReduction: expenseReduction.monthly,
-    scenario: reviewData?.scenario ?? null,
-    monteCarlo: reviewData?.scenario?.monteCarlo ?? null,
-    adjustmentExceedsCapacity: reviewData?.adjustmentExceedsCapacity ?? false,
-  });
+  const payload = JSON.stringify(createPlanReviewPayload(customer, allocationItems, reviewData));
   useEffect(() => {
     active.current?.abort(); active.current = null;
     setReview(null); setError(""); setLoading(false);
@@ -42,8 +36,9 @@ export default function ReviewPage({ customer, reviewData, allocationItems, onPr
   const sources = [
     { id: 'cashflow', name: '고객 재무정보', ready: true, detail: '소득·지출·자산·부채' },
     { id: 'allocation', name: '연차별 배분', ready: true, detail: '항목별 월 배분 계획' },
-    { id: 'goal', name: '목표 · 시나리오', ready: !!reviewData?.scenario, detail: '시나리오 비교에서 목표와 기간 입력' },
-    { id: 'stress', name: '스트레스 테스트', ready: !!reviewData?.scenario?.stressTest, detail: '충격 지속 기간 입력' },
+    { id: 'goal', name: '추가 목표 · 시나리오', ready: !!reviewData?.scenario, detail: '직접 설정한 목표와 기간 · 선택 기능' },
+    { id: 'stress', name: '5년 설계안 충격 점검', ready: true, detail: reviewData?.scenario?.stressTest
+      ? '보고서의 6가지 충격 조건 + 추가 목표의 일시 충격' : '보고서의 6가지 충격 조건 · 목표 입력 없이 검토' },
     { id: 'monteCarlo', name: '몬테카를로', ready: !!reviewData?.scenario?.monteCarlo, detail: '시나리오 비교에서 시뮬레이션 실행' },
     { id: 'adjustment', name: '수정 계획', ready: !!reviewData?.scenario?.adjustment || !!reviewData?.adjustmentExceedsCapacity,
       detail: reviewData?.adjustmentExceedsCapacity ? '월 저축 가능액 초과 · 점검 필요' : '수정 목표·기간·저축액 입력' },
@@ -64,7 +59,7 @@ export default function ReviewPage({ customer, reviewData, allocationItems, onPr
   return <section className="review-page">
     <header className="review-page__header">
       <div><p className="review-page__eyebrow">재무계획 점검</p><h1>AI 답변 검토</h1>
-        <p className="review-page__intro">계획을 점검하고, 궁금한 점은 대화로 이어가세요.</p></div>
+        <p className="review-page__intro">보고서의 5년 배분 계획과 충격 상황을 점검하고, 대화로 이어가세요.</p></div>
       <button type="button" className="review-page__button" onClick={handleReview} disabled={loading}>
         <span aria-hidden="true">{loading ? '◌' : '↗'}</span> {loading ? '전체 계획 검토 중…' : review ? '전체 계획 다시 검토' : '전체 계획 검토하기'}
       </button>
@@ -86,7 +81,7 @@ export default function ReviewPage({ customer, reviewData, allocationItems, onPr
           {source.ready ? <span className="review-page__source-state is-ready">검토에 포함</span>
             : <button type="button" className="review-page__source-start" onClick={() => onPrepare?.(getReviewGuide(source.id, !!reviewData?.scenario).fieldId)}
                 aria-label={`${source.name} 시작하기`}>시작하기 <span aria-hidden="true">→</span></button>}</li>)}</ul>
-        <p className="review-page__source-help">고객정보와 배분은 ‘재무계획’, 목표와 시뮬레이션은 ‘시나리오 비교’에서 수정하세요. 입력값이 바뀌면 이전 검토와 대화가 초기화됩니다.</p>
+        <p className="review-page__source-help">고객정보와 배분은 ‘재무계획’에서 수정하세요. ‘시나리오 비교’의 추가 목표와 몬테카를로는 선택 기능이며, 주택·결혼의 상세 설계와 상품 적합성은 검증 범위에 포함되지 않습니다. 입력값이 바뀌면 이전 검토와 대화가 초기화됩니다.</p>
       </details>
     </section>
 

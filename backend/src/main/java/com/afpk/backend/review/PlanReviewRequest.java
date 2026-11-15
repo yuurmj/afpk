@@ -11,7 +11,12 @@ public record PlanReviewRequest(
     @Valid ScenarioAnalysisRequest scenario,
     @Valid MonteCarlo monteCarlo,
     boolean adjustmentExceedsCapacity,
-    @Min(0) @Max(1000000000000L) Long allocationExpenseReduction) {
+    @Min(0) @Max(1000000000000L) Long allocationExpenseReduction,
+    @Valid PlanStress planStress) {
+  public record PlanStress(
+      @NotNull @Size(min=4,max=4) List<@NotNull @Min(1) @Max(60) Integer> periodMonths,
+      @NotNull @DecimalMin("0") @DecimalMax("1") Double isaStockRatio,
+      @NotNull @DecimalMin("0") @DecimalMax("1") Double isaDropRate) {}
   public record Customer(@Min(0) @Max(120) int age, @NotBlank @Size(max=80) String occupation,
       @NotNull @Min(0) @Max(1000000000000L) Long monthlyNetIncome,
       @NotNull @Min(0) @Max(1000000000000L) Long monthlyLivingExpenses,
