@@ -281,7 +281,9 @@ export default function PlanPage({ customer, onCustomerChange, allocationItems, 
                   >
                     {gap < 0
                       ? `${formatAmount(-gap)} 초과`
-                      : `${formatAmount(gap)} 여유`}
+                      : gap === 0
+                        ? "0원 (여유 없음)"
+                        : `${formatAmount(gap)} 여유`}
                   </td>
                 );
               })}
