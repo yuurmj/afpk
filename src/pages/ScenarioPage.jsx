@@ -6,10 +6,10 @@ import {
   calculateTemporaryShockGoal,
   simulateGoalMonteCarlo,
 } from "../utils/calculations.js";
-import { stressScenarios } from "../data/stressScenarios.js";
+import { createStressScenarios } from "../data/stressScenarios.js";
 import "./ScenarioPage.scss";
 
-export default function ScenarioPage({ customer, onReviewDataChange, focusRequest }) {
+export default function ScenarioPage({ customer, allocationItems, onReviewDataChange, focusRequest }) {
   const [decreaseRate, setDecreaseRate] = useState("10");
   const [expenseIncreaseRate, setExpenseIncreaseRate] = useState("0");
   const [targetAmount, setTargetAmount] = useState("");
@@ -108,7 +108,7 @@ export default function ScenarioPage({ customer, onReviewDataChange, focusReques
       ? calculateGoalShortfall(revisedAmount, revisedMonths, revisedSavings)
       : null;
 
-  const stressResults = stressScenarios.map((condition) => {
+  const stressResults = createStressScenarios(allocationItems).map((condition) => {
     const cashflow = caculateCashflowScenario(
       customer,
       condition.incomeDecreaseRate,

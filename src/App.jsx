@@ -34,7 +34,7 @@ export default function App() {
                         allocationItems={allocationItems} onAllocationChange={setAllocationItems} />
                 </div>
                 <div hidden={currentPage !== 'scenario'}>
-                    <ScenarioPage customer={customer} onReviewDataChange={setReviewData} focusRequest={scenarioFocus} />
+                    <ScenarioPage customer={customer} allocationItems={allocationItems} onReviewDataChange={setReviewData} focusRequest={scenarioFocus} />
                 </div>
                 <div hidden={currentPage !== 'review'}>
                     <ReviewPage customer={customer} reviewData={reviewData} allocationItems={allocationItems} onPrepare={prepareReviewItem} />

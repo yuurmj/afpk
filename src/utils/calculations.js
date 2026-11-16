@@ -183,9 +183,11 @@ export function calculatePlanStress({
   const income = Math.round(
     customer.monthlyNetIncome * (1 - scenario.incomeDecreaseRate / 100),
   );
-  const baseExpenses =
-    customer.monthlyLivingExpenses -
-    (scenario.skipReduction ? 0 : expenseReduction);
+  // 절감액은 생활지출을 넘을 수 없다(지출이 음수가 되는 것 방지).
+  const appliedReduction = scenario.skipReduction
+    ? 0
+    : Math.min(expenseReduction, customer.monthlyLivingExpenses);
+  const baseExpenses = customer.monthlyLivingExpenses - appliedReduction;
   const expenses = Math.round(
     baseExpenses * (1 + scenario.expenseIncreaseRate / 100),
   );

@@ -22,7 +22,8 @@ export default function PlanPage({ customer, onCustomerChange, allocationItems, 
   // 즉 설계안의 지출 절감을 반영한 (실수령액 - 생활지출)과 비교합니다.
   const availableForPlan =
     customer.monthlyNetIncome -
-    (customer.monthlyLivingExpenses - expenseReduction.monthly);
+    (customer.monthlyLivingExpenses -
+      Math.min(expenseReduction.monthly, customer.monthlyLivingExpenses));
 
   const periodTotals = allocationPeriods.map((_, index) =>
     allocationItems.reduce((total, item) => total + item.monthly[index], 0),

@@ -68,7 +68,10 @@ export default function PlanStressTest({ customer, allocationItems }) {
                   <br />
                   <small>{result.scenario.description}</small>
                 </th>
-                <td className="amount">{won(result.available)}</td>
+                <td className="amount">
+                  {result.available < 0 ? "−" : ""}
+                  {won(result.available)}
+                </td>
                 {result.yearly.map((year, index) => (
                   <GapCell value={year.gap} key={allocationPeriods[index]} />
                 ))}

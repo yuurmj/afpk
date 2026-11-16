@@ -1,4 +1,3 @@
-import { allocationItems } from './allocationPlan.js';
 import { ISA_STOCK_RATIO, ISA_DROP_RATE } from './planStressScenarios.js';
 import { PLAN_PERIOD_MONTHS } from '../utils/calculations.js';
 
@@ -9,14 +8,15 @@ import { PLAN_PERIOD_MONTHS } from '../utils/calculations.js';
 
 // ISA 평가손실: 코로나19 당시 코스피 고점 대비 약 35% 하락을 ISA 주식 비중 60%에
 // 적용합니다. 납입액은 배분표의 1~5년차 ISA 월 납입액 합계입니다.
-const isaMonthly = allocationItems.find((item) => item.id === 'isa').monthly;
+export function createStressScenarios(allocationItems) {
+const isaMonthly = allocationItems.find((item) => item.id === 'isa')?.monthly ?? [];
 const isaContribution = isaMonthly.reduce(
   (total, amount, index) => total + amount * PLAN_PERIOD_MONTHS[index],
   0,
 );
 const isaLoss = Math.round(isaContribution * ISA_STOCK_RATIO * ISA_DROP_RATE);
 
-export const stressScenarios = [
+return [
   {
     id: 'baseline',
     name: '기본 조건',
@@ -58,3 +58,4 @@ export const stressScenarios = [
     extraCost: isaLoss,
   },
 ];
+}
