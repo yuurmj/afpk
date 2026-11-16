@@ -19,12 +19,13 @@ function GapCell({ value }) {
 }
 
 export default function PlanStressTest({ customer, allocationItems }) {
+  const appliedExpenseReduction = Math.min(expenseReduction.monthly, customer.monthlyLivingExpenses);
   const results = planStressScenarios.map((scenario) => ({
     scenario,
     ...calculatePlanStress({
       customer,
       allocationItems,
-      expenseReduction: expenseReduction.monthly,
+      expenseReduction: appliedExpenseReduction,
       scenario,
       isaStockRatio: ISA_STOCK_RATIO,
       isaDropRate: ISA_DROP_RATE,
@@ -94,7 +95,7 @@ export default function PlanStressTest({ customer, allocationItems }) {
         <summary>계산 기준</summary>
         <p>
           월 가용 재원은 실수령액에서 생활지출을 뺀 금액이며, 설계안의{" "}
-          {expenseReduction.label} 절감 {won(expenseReduction.monthly)}을
+          {expenseReduction.label} 절감 {won(appliedExpenseReduction)}을
           반영합니다(식비 절감 미이행 조건에서는 제외). 학자금 상환은 배분표에
           포함되어 있어 다시 차감하지 않습니다. 과부족은 연차별 월 배분 합계와
           비교한 값이고, 5년 누적은 {PLAN_PERIOD_MONTHS.join("·")}개월(1년차,

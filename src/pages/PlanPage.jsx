@@ -17,13 +17,13 @@ export default function PlanPage({ customer, onCustomerChange, allocationItems, 
 
   const monthlySurplus = calculateMonthlySurplus(customer);
   const netWorth = calculateNetWorth(customer);
+  const appliedExpenseReduction = Math.min(expenseReduction.monthly, customer.monthlyLivingExpenses);
 
   // 배분표에는 학자금 상환이 포함되어 있으므로 대출상환액을 빼기 전 금액,
   // 즉 설계안의 지출 절감을 반영한 (실수령액 - 생활지출)과 비교합니다.
   const availableForPlan =
     customer.monthlyNetIncome -
-    (customer.monthlyLivingExpenses -
-      Math.min(expenseReduction.monthly, customer.monthlyLivingExpenses));
+    (customer.monthlyLivingExpenses - appliedExpenseReduction);
 
   const periodTotals = allocationPeriods.map((_, index) =>
     allocationItems.reduce((total, item) => total + item.monthly[index], 0),
@@ -295,7 +295,7 @@ export default function PlanPage({ customer, onCustomerChange, allocationItems, 
         <p className="plan-page__description">
           배분 가능 재원은 월 {formatAmount(availableForPlan)}입니다(실수령액 -
           생활지출). 설계안의 {expenseReduction.label} 절감{" "}
-          {formatAmount(expenseReduction.monthly)}을 반영했으며, 소득은 현재
+          {formatAmount(appliedExpenseReduction)}을 반영했으며, 소득은 현재
           수준으로 유지된다고 가정합니다. 보고서의 만원 단위 값은 원 단위로
           환산했습니다.
         </p>

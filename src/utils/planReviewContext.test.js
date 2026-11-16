@@ -15,11 +15,22 @@ test('AI review includes five-year assumptions without requiring an extra goal',
 });
 
 test('AI review receives the currently edited allocations rather than initial values', () => {
+  const original = structuredClone(allocationItems);
   const edited = allocationItems.map(item => item.id === 'isa' ? { ...item, monthly: [0,0,0,0] } : item);
   const payload = createPlanReviewPayload(customer, edited, null);
   assert.deepEqual(payload.allocationItems.find(item => item.id === 'isa').monthly, [0,0,0,0]);
-  assert.deepEqual(allocationItems.find(item => item.id === 'isa').monthly, [0,690000,490000,490000]);
+  assert.deepEqual(allocationItems, original);
 });
+
+for (const expenses of [0, 100000, 130000]) {
+  test(`AI review sends valid expense savings when living expenses are ${expenses}`, () => {
+    const currentCustomer = { ...customer, monthlyLivingExpenses: expenses };
+    const payload = createPlanReviewPayload(currentCustomer, allocationItems, null);
+    assert.equal(payload.allocationExpenseReduction, expenses);
+    assert.equal(payload.customer.monthlyLivingExpenses, expenses);
+    assert.ok(payload.allocationExpenseReduction <= payload.customer.monthlyLivingExpenses);
+  });
+}
 
 test('optional analyses continue to be forwarded to AI without changing their contents', () => {
   const monteCarlo = { runs: 1000, successRate: 0.2 };

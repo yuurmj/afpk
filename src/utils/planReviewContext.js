@@ -5,7 +5,7 @@ import { ISA_STOCK_RATIO, ISA_DROP_RATE } from '../data/planStressScenarios.js';
 export function createPlanReviewPayload(customer, allocationItems, reviewData) {
   return {
     customer, allocationPeriods, allocationItems,
-    allocationExpenseReduction: expenseReduction.monthly,
+    allocationExpenseReduction: Math.min(expenseReduction.monthly, customer.monthlyLivingExpenses),
     // 결과 금액을 신뢰하지 않고 서버가 현재 입력과 이 가정으로 다시 계산합니다.
     planStress: {
       periodMonths: PLAN_PERIOD_MONTHS,

@@ -70,6 +70,33 @@ class PlanStressReviewTests {
         "\"livingExpensesAfterReductionAndShock\":1356190","\"expenseReductionApplied\":130000");
   }
 
+  @Test void acceptsCappedExpenseSavingsInReviewAndChatWhenLivingExpensesAreLow() throws Exception {
+    when(gemini.review(anyString())).thenReturn(answer());
+    when(gemini.chat(anyString(),anyList())).thenReturn("학자금 상환과 비상자금 적립을 유지하며 배분을 점검합니다.");
+    for (long expenses : new long[]{0,100000}) {
+      clearInvocations(gemini);
+      String request=plan().replace("\"monthlyLivingExpenses\":1486190","\"monthlyLivingExpenses\":"+expenses)
+          .replace("\"allocationExpenseReduction\":130000","\"allocationExpenseReduction\":"+expenses);
+      mvc.perform(post("/api/review-plan").contentType(MediaType.APPLICATION_JSON).content(request))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.sections[1].evidence[0]").value(org.hamcrest.Matchers.containsString("배분 가능 3,019,950원")));
+      var reviewData=ArgumentCaptor.forClass(String.class);
+      verify(gemini).review(reviewData.capture());
+      assertThat(reviewData.getValue()).contains("\"allocationExpenseReduction\":"+expenses,
+          "\"livingExpensesAfterReductionAndShock\":0","\"expenseReductionApplied\":"+expenses,
+          "\"available\":3019950");
+
+      String body="{\"plan\":"+request+",\"messages\":[{\"role\":\"user\",\"text\":\"현재 생활지출 기준으로 검토해줘\"}]}";
+      mvc.perform(post("/api/review-plan/chat").contentType(MediaType.APPLICATION_JSON).content(body))
+          .andExpect(status().isOk());
+      var chatData=ArgumentCaptor.forClass(String.class);
+      verify(gemini).chat(chatData.capture(),anyList());
+      assertThat(chatData.getValue()).contains("\"allocationExpenseReduction\":"+expenses,
+          "\"livingExpensesAfterReductionAndShock\":0","\"expenseReductionApplied\":"+expenses,
+          "\"available\":3019950");
+    }
+  }
+
   @Test void editedIsaAndLiquidityChangeTheServerEvidence() throws Exception {
     when(gemini.review(anyString())).thenReturn(answer());
     String edited=plan().replace("[0,690000,490000,490000]","[0,0,0,0]").replace("[0,0,260000,760000]","[0,0,0,0]");
